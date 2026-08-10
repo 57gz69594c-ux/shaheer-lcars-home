@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Install Home Control</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0e0e10; color: #fff;
+  font-family: -apple-system, sans-serif;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px;
+}
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+p { font-size: 14px; color: rgba(255,255,255,0.45); margin-bottom: 32px; text-align: center; }
+#qr { margin-bottom: 20px; }
+.url { font-size: 11px; color: rgba(255,255,255,0.25); word-break: break-all; text-align: center; max-width: 300px; }
+</style>
+</head>
+<body>
+<h1>Home Control</h1>
+<p>On your rabbit r1: open Creations &rarr; add via QR code &rarr; scan this.</p>
+<div id="qr"><img id="qr-img" width="260" height="260" alt="Install QR code" style="display:block;border-radius:12px;"></div>
+<div class="url" id="url-label"></div>
+<script>
+  var creationUrl = 'https://57gz69594c-ux.github.io/shaheer-lcars-home/?v=1';
+  document.getElementById('url-label').textContent = creationUrl;
+
+  var qrData = JSON.stringify({
+    title: "Home Control",
+    url: creationUrl,
+    description: "LCARS-style HomePod & Home control panel — media playback and scenes via Pushcut",
+    iconUrl: "",
+    themeColor: "#ff9c00"
+  });
+
+  document.getElementById('qr-img').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=' + encodeURIComponent(qrData);
+</script>
+</body>
+</html>

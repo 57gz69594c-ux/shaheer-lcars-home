@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=240, initial-scale=1, user-scalable=no">
+<title>HOME CONTROL</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:240px; height:282px; background:#000; overflow:hidden;
+    font-family:-apple-system, "Helvetica Neue", Arial, sans-serif; }
+  body { display:flex; flex-direction:column; }
+
+  :root{
+    --orange:#ff9c00; --purple:#cc99cc; --blue:#9999ff;
+    --gold:#ffcc66; --rust:#cc6666; --teal:#66cccc; --bg:#000;
+  }
+
+  /* ---------- header / elbow ---------- */
+  #header{ display:flex; align-items:stretch; height:30px; }
+  #elbow{ width:22px; background:var(--orange); border-radius:16px 0 0 0; }
+  #headerBar{ flex:1; background:var(--orange); display:flex; align-items:center;
+    justify-content:space-between; padding:0 8px 0 6px; border-radius:0 0 0 0; }
+  #title{ color:#000; font-weight:800; font-size:12px; letter-spacing:1px; }
+  #gearBtn{ background:#000; color:var(--orange); border:none; width:18px; height:18px;
+    border-radius:50%; font-size:11px; line-height:18px; text-align:center; padding:0; }
+
+  /* ---------- tabs ---------- */
+  #tabs{ display:flex; gap:3px; padding:4px 6px 0 6px; height:22px; }
+  .tab{ flex:1; border:none; border-radius:8px 8px 0 0; font-weight:800; font-size:10px;
+    letter-spacing:1px; color:#000; background:#665; opacity:.45; }
+  .tab.active{ opacity:1; }
+  .tab[data-tab="media"]{ background:var(--blue); }
+  .tab[data-tab="scenes"]{ background:var(--purple); }
+
+  /* ---------- content ---------- */
+  #content{ flex:1; background:#111; overflow-y:auto; padding:6px; }
+  .panel{ display:flex; flex-direction:column; gap:5px; }
+  .btn{ border:none; border-radius:14px; height:32px; width:100%;
+    display:flex; align-items:center; padding:0 14px; font-weight:800;
+    font-size:11px; letter-spacing:1px; color:#000; text-transform:uppercase; }
+  .btn:active, .btn.firing{ filter:brightness(1.3); transform:scale(0.98); }
+  .btn.c-orange{ background:var(--orange); }
+  .btn.c-purple{ background:var(--purple); }
+  .btn.c-blue{ background:var(--blue); }
+  .btn.c-gold{ background:var(--gold); }
+  .btn.c-rust{ background:var(--rust); }
+  .btn.c-teal{ background:var(--teal); }
+
+  /* ---------- status bar ---------- */
+  #statusBar{ height:20px; background:var(--rust); color:#000; font-weight:800;
+    font-size:10px; letter-spacing:1px; display:flex; align-items:center;
+    justify-content:center; border-radius:0 0 0 10px; }
+  #statusBar.ok{ background:var(--teal); }
+  #statusBar.err{ background:#ff3333; }
+
+  /* ---------- settings overlay ---------- */
+  #settings{ position:fixed; inset:0; background:#000; z-index:10; display:flex;
+    flex-direction:column; }
+  #settingsHeader{ height:26px; background:var(--purple); display:flex; align-items:center;
+    justify-content:space-between; padding:0 8px; border-radius:0 0 14px 0; }
+  #settingsHeader span{ color:#000; font-weight:800; font-size:11px; letter-spacing:1px; }
+  #closeBtn{ background:#000; color:var(--purple); border:none; width:16px; height:16px;
+    border-radius:50%; font-size:10px; line-height:16px; }
+  #settingsBody{ flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .field label{ display:block; color:var(--gold); font-size:9px; font-weight:800;
+    letter-spacing:.5px; margin-bottom:2px; }
+  .field input{ width:100%; background:#1a1a1a; border:1px solid #444; color:#fff;
+    font-size:10px; padding:5px 6px; border-radius:6px; }
+  .sectionLabel{ color:var(--orange); font-size:9px; font-weight:800; letter-spacing:1px;
+    margin-top:4px; }
+  #saveBtn{ margin-top:4px; }
+
+  ::-webkit-scrollbar{ width:0; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="elbow"></div>
+  <div id="headerBar">
+    <span id="title">HOME CONTROL</span>
+    <button id="gearBtn">&#9881;</button>
+  </div>
+</div>
+
+<div id="tabs">
+  <button class="tab active" data-tab="media">MEDIA</button>
+  <button class="tab" data-tab="scenes">SCENES</button>
+</div>
+
+<div id="content">
+  <div class="panel" id="panel-media"></div>
+  <div class="panel" id="panel-scenes" style="display:none"></div>
+</div>
+
+<div id="statusBar">STANDBY</div>
+
+<div id="settings">
+  <div id="settingsHeader">
+    <span>SETTINGS</span>
+    <button id="closeBtn">&times;</button>
+  </div>
+  <div id="settingsBody">
+    <div class="field">
+      <label>PUSHCUT API KEY</label>
+      <input id="apiKeyInput" type="text" placeholder="paste key from Pushcut app">
+    </div>
+    <div id="nameFields"></div>
+    <button id="saveBtn" class="btn c-teal">SAVE</button>
+    <button id="restoreBtn" class="btn c-rust">RESTORE DEFAULTS</button>
+  </div>
+</div>
+
+<script>
+var MEDIA_ACTIONS = [
+  { id:'play',    label:'Play',          shortcut:'R1 Play',            color:'c-blue' },
+  { id:'pause',   label:'Pause',         shortcut:'R1 Pause',           color:'c-blue' },
+  { id:'next',    label:'Next Track',    shortcut:'R1 Next Track',      color:'c-teal' },
+  { id:'prev',    label:'Previous Track',shortcut:'R1 Previous Track',  color:'c-teal' },
+  { id:'volup',   label:'Volume Up',     shortcut:'R1 Volume Up',       color:'c-gold' },
+  { id:'voldown', label:'Volume Down',   shortcut:'R1 Volume Down',     color:'c-gold' }
+];
+
+var SCENE_ACTIONS = [
+  { id:'morning',  label:'Good Morning', shortcut:'R1 Good Morning', color:'c-orange' },
+  { id:'night',    label:'Good Night',   shortcut:'R1 Good Night',   color:'c-purple' },
+  { id:'movie',    label:'Movie Time',   shortcut:'R1 Movie Time',   color:'c-rust' },
+  { id:'away',     label:'Away Mode',    shortcut:'R1 Away Mode',    color:'c-teal' },
+  { id:'lightson', label:'Lights On',    shortcut:'R1 Lights On',    color:'c-gold' },
+  { id:'lightsoff',label:'Lights Off',   shortcut:'R1 Lights Off',   color:'c-purple' }
+];
+
+var ALL_ACTIONS = MEDIA_ACTIONS.concat(SCENE_ACTIONS);
+var STORE_KEY = 'lcarsHomeConfig';
+
+function defaultConfig(){
+  var names = {};
+  ALL_ACTIONS.forEach(function(a){ names[a.id] = a.shortcut; });
+  return { key:'', names:names };
+}
+
+function loadConfig(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultConfig();
+    var parsed = JSON.parse(raw);
+    var d = defaultConfig();
+    return { key: parsed.key || '', names: Object.assign(d.names, parsed.names || {}) };
+  }catch(e){ return defaultConfig(); }
+}
+
+function saveConfig(cfg){ localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); }
+
+var config = loadConfig();
+
+function buildPanel(el, actions){
+  el.innerHTML = '';
+  actions.forEach(function(a){
+    var btn = document.createElement('button');
+    btn.className = 'btn ' + a.color;
+    btn.textContent = a.label;
+    btn.addEventListener('click', function(){ fireAction(a.id, a.label, btn); });
+    el.appendChild(btn);
+  });
+}
+buildPanel(document.getElementById('panel-media'), MEDIA_ACTIONS);
+buildPanel(document.getElementById('panel-scenes'), SCENE_ACTIONS);
+
+var statusBar = document.getElementById('statusBar');
+var statusTimer = null;
+function setStatus(text, cls){
+  clearTimeout(statusTimer);
+  statusBar.textContent = text;
+  statusBar.className = cls || '';
+}
+
+function fireAction(id, label, btnEl){
+  var cfg = loadConfig();
+  if(!cfg.key){ openSettings(); return; }
+  var shortcutName = cfg.names[id];
+  btnEl.classList.add('firing');
+  setStatus('EXECUTING: ' + label.toUpperCase());
+  fetch('https://api.pushcut.io/' + encodeURIComponent(cfg.key) +
+        '/execute?shortcut=' + encodeURIComponent(shortcutName),
+        { method:'POST', mode:'no-cors' })
+    .then(function(){ setStatus('SENT: ' + label.toUpperCase(), 'ok'); })
+    .catch(function(){ setStatus('LINK ERROR', 'err'); })
+    .then(function(){
+      statusTimer = setTimeout(function(){
+        btnEl.classList.remove('firing');
+        setStatus('STANDBY');
+      }, 1400);
+    });
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(function(tabBtn){
+  tabBtn.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    tabBtn.classList.add('active');
+    var which = tabBtn.getAttribute('data-tab');
+    document.getElementById('panel-media').style.display = which === 'media' ? 'flex' : 'none';
+    document.getElementById('panel-scenes').style.display = which === 'scenes' ? 'flex' : 'none';
+  });
+});
+
+/* ---------- settings ---------- */
+var settingsEl = document.getElementById('settings');
+var apiKeyInput = document.getElementById('apiKeyInput');
+var nameFieldsEl = document.getElementById('nameFields');
+
+function renderNameFields(cfg){
+  nameFieldsEl.innerHTML = '';
+  var lastGroup = null;
+  ALL_ACTIONS.forEach(function(a){
+    var group = MEDIA_ACTIONS.indexOf(a) > -1 ? 'MEDIA SHORTCUT NAMES' : 'SCENE SHORTCUT NAMES';
+    if(group !== lastGroup){
+      var h = document.createElement('div');
+      h.className = 'sectionLabel';
+      h.textContent = group;
+      nameFieldsEl.appendChild(h);
+      lastGroup = group;
+    }
+    var wrap = document.createElement('div');
+    wrap.className = 'field';
+    var lab = document.createElement('label');
+    lab.textContent = a.label;
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.dataset.id = a.id;
+    inp.value = cfg.names[a.id];
+    wrap.appendChild(lab);
+    wrap.appendChild(inp);
+    nameFieldsEl.appendChild(wrap);
+  });
+}
+
+function openSettings(){
+  var cfg = loadConfig();
+  apiKeyInput.value = cfg.key;
+  renderNameFields(cfg);
+  settingsEl.style.display = 'flex';
+}
+function closeSettings(){ settingsEl.style.display = 'none'; }
+
+document.getElementById('gearBtn').addEventListener('click', openSettings);
+document.getElementById('closeBtn').addEventListener('click', closeSettings);
+
+document.getElementById('saveBtn').addEventListener('click', function(){
+  var cfg = loadConfig();
+  cfg.key = apiKeyInput.value.trim();
+  nameFieldsEl.querySelectorAll('input[data-id]').forEach(function(inp){
+    cfg.names[inp.dataset.id] = inp.value.trim();
+  });
+  saveConfig(cfg);
+  setStatus('SETTINGS SAVED', 'ok');
+  closeSettings();
+});
+
+document.getElementById('restoreBtn').addEventListener('click', function(){
+  var cfg = defaultConfig();
+  cfg.key = apiKeyInput.value.trim();
+  saveConfig(cfg);
+  renderNameFields(cfg);
+});
+
+/* first run: no key saved yet -> open settings automatically */
+if(!config.key){ openSettings(); }
+</script>
+</body>
+</html>
