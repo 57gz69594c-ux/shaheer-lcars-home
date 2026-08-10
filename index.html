@@ -8,7 +8,7 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { width:240px; height:282px; background:#050506; overflow:hidden;
     font-family:"Courier New", Courier, monospace; }
-  body { display:flex; flex-direction:column; }
+  body { display:flex; flex-direction:column; position:relative; }
 
   :root{
     /* panel switch/LED colors: red / blue / white / purple accent */
@@ -101,6 +101,11 @@
   #statusBar.ok{ color:var(--purple); text-shadow:0 0 6px var(--purple); }
   #statusBar.err{ color:#ff3333; text-shadow:0 0 6px #ff3333; animation:alertFlash .6s infinite; }
 
+  /* ---------- build tag: tiny hull-stencil registry stamp ---------- */
+  #buildTag{ position:absolute; right:5px; bottom:3px; font-size:7px; letter-spacing:1px;
+    color:var(--amber); opacity:.45; text-shadow:0 0 3px rgba(255,180,0,.6);
+    pointer-events:none; z-index:3; }
+
   /* ---------- settings overlay: black + glowing amber/purple/red text ---------- */
   #settings{ position:fixed; inset:0; background:#050506; z-index:10; display:flex;
     flex-direction:column; }
@@ -154,6 +159,7 @@
 </div>
 
 <div id="statusBar">STANDBY</div>
+<div id="buildTag">HC&middot;REV.05</div>
 
 <div id="settings">
   <div id="settingsHeader">
