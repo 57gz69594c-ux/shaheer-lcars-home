@@ -11,12 +11,11 @@
   body { display:flex; flex-direction:column; position:relative; }
 
   :root{
-    /* panel switch/LED colors: red / blue / white / purple accent */
-    --orange:#ff2d2d; --purple:#a239ff; --blue:#3fa0ff;
-    --gold:#f2f2f2; --rust:#8b0000; --teal:#efe6cf; --bg:#050506;
-    --panel:#17181b; --panel2:#212327; --metal:#2b2e33; --border:#45484e;
-    /* readout/menu text: amber primary, purple secondary, red = alert */
-    --amber:#ffb400;
+    /* ambient panel/LED lights only: red / blue / white — never used for text or buttons */
+    --orange:#ff2d2d; --blue:#3fa0ff; --gold:#f2f2f2;
+    --bg:#050506; --panel:#17181b; --panel2:#212327; --metal:#2b2e33; --border:#45484e;
+    /* backlit switch + readout text glow colors: red/orange/amber/crimson/purple/violet — no blue, no white */
+    --purple:#a239ff; --violet:#7c4dff; --copper:#ff8c1a; --amber:#ffb400; --crimson:#e0245e;
   }
 
   html,body{
@@ -78,20 +77,27 @@
   #content{ flex:1; background:var(--panel); overflow-y:auto; padding:6px;
     background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 14px); }
   .panel{ display:flex; flex-direction:column; gap:5px; }
-  .btn{ border:1px solid rgba(0,0,0,0.5); border-radius:3px; height:32px; width:100%;
+  /* backlit switch plate: black face, glowing engraved label — no fill colors */
+  .btn{ border:1px solid var(--border); border-radius:3px; height:32px; width:100%;
     display:flex; align-items:center; gap:8px; padding:0 12px; font-weight:700;
-    font-size:10px; letter-spacing:1.5px; color:#050506; text-transform:uppercase;
-    position:relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 3px rgba(0,0,0,0.35); }
-  .btn::before{ content:''; width:6px; height:6px; border-radius:50%; background:rgba(0,0,0,0.35);
-    box-shadow:inset 0 0 2px rgba(0,0,0,0.6); flex:none; }
-  .btn:active, .btn.firing{ filter:brightness(1.25); transform:scale(0.98); }
-  .btn.firing::before{ background:#fff; box-shadow:0 0 6px #fff, 0 0 10px #fff; animation:firingPulse .5s infinite; }
-  .btn.c-orange{ background:var(--orange); }
-  .btn.c-purple{ background:var(--purple); }
-  .btn.c-blue{ background:var(--blue); }
-  .btn.c-gold{ background:var(--gold); }
-  .btn.c-rust{ background:var(--rust); color:var(--gold); }
-  .btn.c-teal{ background:var(--teal); }
+    font-size:10px; letter-spacing:1.5px; text-transform:uppercase; background:#0b0c0e;
+    position:relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 2px rgba(0,0,0,0.6); }
+  .btn::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor;
+    box-shadow:0 0 4px currentColor, 0 0 9px currentColor; flex:none; opacity:.9; }
+  .btn:active, .btn.firing{ filter:brightness(1.4); transform:scale(0.98); }
+  .btn.firing::before{ animation:firingPulse .35s infinite; }
+  .btn.c-red{ color:var(--orange); border-color:rgba(255,45,45,.5); text-shadow:0 0 6px var(--orange);
+    box-shadow:inset 0 0 10px rgba(255,45,45,.18), inset 0 1px 0 rgba(255,255,255,.04); }
+  .btn.c-purple{ color:var(--purple); border-color:rgba(162,57,255,.5); text-shadow:0 0 6px var(--purple);
+    box-shadow:inset 0 0 10px rgba(162,57,255,.18), inset 0 1px 0 rgba(255,255,255,.04); }
+  .btn.c-violet{ color:var(--violet); border-color:rgba(124,77,255,.5); text-shadow:0 0 6px var(--violet);
+    box-shadow:inset 0 0 10px rgba(124,77,255,.18), inset 0 1px 0 rgba(255,255,255,.04); }
+  .btn.c-amber{ color:var(--amber); border-color:rgba(255,180,0,.5); text-shadow:0 0 6px var(--amber);
+    box-shadow:inset 0 0 10px rgba(255,180,0,.18), inset 0 1px 0 rgba(255,255,255,.04); }
+  .btn.c-crimson{ color:var(--crimson); border-color:rgba(224,36,94,.5); text-shadow:0 0 6px var(--crimson);
+    box-shadow:inset 0 0 10px rgba(224,36,94,.18), inset 0 1px 0 rgba(255,255,255,.04); }
+  .btn.c-copper{ color:var(--copper); border-color:rgba(255,140,26,.5); text-shadow:0 0 6px var(--copper);
+    box-shadow:inset 0 0 10px rgba(255,140,26,.18), inset 0 1px 0 rgba(255,255,255,.04); }
 
   /* ---------- status bar: amber readout, purple = confirm, red = alert ---------- */
   #statusBar{ height:20px; background:#000; color:var(--amber); font-weight:700;
@@ -149,17 +155,17 @@
 </div>
 
 <div id="tabs">
-  <button class="tab active" data-tab="media">MEDIA</button>
-  <button class="tab" data-tab="scenes">SCENES</button>
+  <button class="tab" data-tab="media">MEDIA</button>
+  <button class="tab active" data-tab="scenes">SCENES</button>
 </div>
 
 <div id="content">
-  <div class="panel" id="panel-media"></div>
-  <div class="panel" id="panel-scenes" style="display:none"></div>
+  <div class="panel" id="panel-media" style="display:none"></div>
+  <div class="panel" id="panel-scenes"></div>
 </div>
 
 <div id="statusBar">STANDBY</div>
-<div id="buildTag">HC&middot;REV.05</div>
+<div id="buildTag">HC&middot;REV.06</div>
 
 <div id="settings">
   <div id="settingsHeader">
@@ -174,20 +180,20 @@
     <div id="nameFields"></div>
     <div class="sectionLabel">SCENES</div>
     <div id="sceneFields"></div>
-    <button id="addSceneBtn" class="btn c-orange">+ ADD SCENE</button>
-    <button id="saveBtn" class="btn c-teal">SAVE</button>
-    <button id="restoreBtn" class="btn c-rust">RESTORE DEFAULTS</button>
+    <button id="addSceneBtn" class="btn c-red">+ ADD SCENE</button>
+    <button id="saveBtn" class="btn c-amber">SAVE</button>
+    <button id="restoreBtn" class="btn c-crimson">RESTORE DEFAULTS</button>
   </div>
 </div>
 
 <script>
 var MEDIA_ACTIONS = [
-  { id:'play',    label:'Play',          shortcut:'R1 Play',            color:'c-blue' },
-  { id:'pause',   label:'Pause',         shortcut:'R1 Pause',           color:'c-blue' },
-  { id:'next',    label:'Next Track',    shortcut:'R1 Next Track',      color:'c-teal' },
-  { id:'prev',    label:'Previous Track',shortcut:'R1 Previous Track',  color:'c-teal' },
-  { id:'volup',   label:'Volume Up',     shortcut:'R1 Volume Up',       color:'c-gold' },
-  { id:'voldown', label:'Volume Down',   shortcut:'R1 Volume Down',     color:'c-gold' }
+  { id:'play',    label:'Play',          shortcut:'R1 Play',            color:'c-red' },
+  { id:'pause',   label:'Pause',         shortcut:'R1 Pause',           color:'c-crimson' },
+  { id:'next',    label:'Next Track',    shortcut:'R1 Next Track',      color:'c-violet' },
+  { id:'prev',    label:'Previous Track',shortcut:'R1 Previous Track',  color:'c-purple' },
+  { id:'volup',   label:'Volume Up',     shortcut:'R1 Volume Up',       color:'c-amber' },
+  { id:'voldown', label:'Volume Down',   shortcut:'R1 Volume Down',     color:'c-copper' }
 ];
 
 /* Scenes are fully user-editable (add/remove/rename in Settings) since these
@@ -199,7 +205,7 @@ var SCENE_DEFAULTS = [
   { id:'spaceship', label:'Spaceship', shortcut:'R1 Spaceship' },
   { id:'tarot',     label:'Tarot',     shortcut:'R1 Tarot' }
 ];
-var SCENE_COLORS = ['c-orange','c-purple','c-blue','c-gold','c-rust','c-teal'];
+var SCENE_COLORS = ['c-red','c-purple','c-violet','c-amber','c-crimson','c-copper'];
 
 var STORE_KEY = 'lcarsHomeConfig';
 
