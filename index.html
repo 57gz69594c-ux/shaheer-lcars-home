@@ -69,6 +69,9 @@
   .sectionLabel{ color:var(--orange); font-size:9px; font-weight:800; letter-spacing:1px;
     margin-top:4px; }
   #saveBtn{ margin-top:4px; }
+  .sceneRow{ border:1px solid #333; border-radius:8px; padding:6px; }
+  .sceneRow .rmBtn{ background:#331111; color:#ff6666; border:none; font-size:9px;
+    font-weight:800; letter-spacing:.5px; padding:4px 8px; border-radius:6px; margin-top:2px; }
 
   ::-webkit-scrollbar{ width:0; }
 </style>
@@ -106,6 +109,9 @@
       <input id="apiKeyInput" type="text" placeholder="paste key from Pushcut app">
     </div>
     <div id="nameFields"></div>
+    <div class="sectionLabel">SCENES</div>
+    <div id="sceneFields"></div>
+    <button id="addSceneBtn" class="btn c-orange">+ ADD SCENE</button>
     <button id="saveBtn" class="btn c-teal">SAVE</button>
     <button id="restoreBtn" class="btn c-rust">RESTORE DEFAULTS</button>
   </div>
@@ -121,22 +127,23 @@ var MEDIA_ACTIONS = [
   { id:'voldown', label:'Volume Down',   shortcut:'R1 Volume Down',     color:'c-gold' }
 ];
 
-var SCENE_ACTIONS = [
-  { id:'morning',  label:'Good Morning', shortcut:'R1 Good Morning', color:'c-orange' },
-  { id:'night',    label:'Good Night',   shortcut:'R1 Good Night',   color:'c-purple' },
-  { id:'movie',    label:'Movie Time',   shortcut:'R1 Movie Time',   color:'c-rust' },
-  { id:'away',     label:'Away Mode',    shortcut:'R1 Away Mode',    color:'c-teal' },
-  { id:'lightson', label:'Lights On',    shortcut:'R1 Lights On',    color:'c-gold' },
-  { id:'lightsoff',label:'Lights Off',   shortcut:'R1 Lights Off',   color:'c-purple' }
+/* Scenes are fully user-editable (add/remove/rename in Settings) since these
+   are personal Home app scenes/rooms, not fixed like the media transport controls. */
+var SCENE_DEFAULTS = [
+  { id:'startrek',  label:'Star Trek', shortcut:'R1 Star Trek' },
+  { id:'daytime',   label:'Daytime',   shortcut:'R1 Daytime' },
+  { id:'cockpit',   label:'Cockpit',   shortcut:'R1 Cockpit' },
+  { id:'spaceship', label:'Spaceship', shortcut:'R1 Spaceship' },
+  { id:'tarot',     label:'Tarot',     shortcut:'R1 Tarot' }
 ];
+var SCENE_COLORS = ['c-orange','c-purple','c-blue','c-gold','c-rust','c-teal'];
 
-var ALL_ACTIONS = MEDIA_ACTIONS.concat(SCENE_ACTIONS);
 var STORE_KEY = 'lcarsHomeConfig';
 
 function defaultConfig(){
   var names = {};
-  ALL_ACTIONS.forEach(function(a){ names[a.id] = a.shortcut; });
-  return { key:'', names:names };
+  MEDIA_ACTIONS.forEach(function(a){ names[a.id] = a.shortcut; });
+  return { key:'', names:names, scenes: SCENE_DEFAULTS.map(function(s){ return Object.assign({}, s); }) };
 }
 
 function loadConfig(){
@@ -145,26 +152,17 @@ function loadConfig(){
     if(!raw) return defaultConfig();
     var parsed = JSON.parse(raw);
     var d = defaultConfig();
-    return { key: parsed.key || '', names: Object.assign(d.names, parsed.names || {}) };
+    return {
+      key: parsed.key || '',
+      names: Object.assign(d.names, parsed.names || {}),
+      scenes: (parsed.scenes && parsed.scenes.length) ? parsed.scenes : d.scenes
+    };
   }catch(e){ return defaultConfig(); }
 }
 
 function saveConfig(cfg){ localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); }
 
 var config = loadConfig();
-
-function buildPanel(el, actions){
-  el.innerHTML = '';
-  actions.forEach(function(a){
-    var btn = document.createElement('button');
-    btn.className = 'btn ' + a.color;
-    btn.textContent = a.label;
-    btn.addEventListener('click', function(){ fireAction(a.id, a.label, btn); });
-    el.appendChild(btn);
-  });
-}
-buildPanel(document.getElementById('panel-media'), MEDIA_ACTIONS);
-buildPanel(document.getElementById('panel-scenes'), SCENE_ACTIONS);
 
 var statusBar = document.getElementById('statusBar');
 var statusTimer = null;
@@ -174,10 +172,9 @@ function setStatus(text, cls){
   statusBar.className = cls || '';
 }
 
-function fireAction(id, label, btnEl){
+function fireAction(label, shortcutName, btnEl){
   var cfg = loadConfig();
   if(!cfg.key){ openSettings(); return; }
-  var shortcutName = cfg.names[id];
   btnEl.classList.add('firing');
   setStatus('EXECUTING: ' + label.toUpperCase());
   fetch('https://api.pushcut.io/' + encodeURIComponent(cfg.key) +
@@ -192,6 +189,35 @@ function fireAction(id, label, btnEl){
       }, 1400);
     });
 }
+
+function renderMediaPanel(){
+  var cfg = loadConfig();
+  var el = document.getElementById('panel-media');
+  el.innerHTML = '';
+  MEDIA_ACTIONS.forEach(function(a){
+    var btn = document.createElement('button');
+    btn.className = 'btn ' + a.color;
+    btn.textContent = a.label;
+    btn.addEventListener('click', function(){ fireAction(a.label, cfg.names[a.id], btn); });
+    el.appendChild(btn);
+  });
+}
+
+function renderScenePanel(){
+  var cfg = loadConfig();
+  var el = document.getElementById('panel-scenes');
+  el.innerHTML = '';
+  cfg.scenes.forEach(function(s, i){
+    var btn = document.createElement('button');
+    btn.className = 'btn ' + SCENE_COLORS[i % SCENE_COLORS.length];
+    btn.textContent = s.label;
+    btn.addEventListener('click', function(){ fireAction(s.label, s.shortcut, btn); });
+    el.appendChild(btn);
+  });
+}
+
+renderMediaPanel();
+renderScenePanel();
 
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(function(tabBtn){
@@ -208,19 +234,16 @@ document.querySelectorAll('.tab').forEach(function(tabBtn){
 var settingsEl = document.getElementById('settings');
 var apiKeyInput = document.getElementById('apiKeyInput');
 var nameFieldsEl = document.getElementById('nameFields');
+var sceneFieldsEl = document.getElementById('sceneFields');
+var editingScenes = [];
 
 function renderNameFields(cfg){
   nameFieldsEl.innerHTML = '';
-  var lastGroup = null;
-  ALL_ACTIONS.forEach(function(a){
-    var group = MEDIA_ACTIONS.indexOf(a) > -1 ? 'MEDIA SHORTCUT NAMES' : 'SCENE SHORTCUT NAMES';
-    if(group !== lastGroup){
-      var h = document.createElement('div');
-      h.className = 'sectionLabel';
-      h.textContent = group;
-      nameFieldsEl.appendChild(h);
-      lastGroup = group;
-    }
+  var h = document.createElement('div');
+  h.className = 'sectionLabel';
+  h.textContent = 'MEDIA SHORTCUT NAMES';
+  nameFieldsEl.appendChild(h);
+  MEDIA_ACTIONS.forEach(function(a){
     var wrap = document.createElement('div');
     wrap.className = 'field';
     var lab = document.createElement('label');
@@ -235,10 +258,43 @@ function renderNameFields(cfg){
   });
 }
 
+function renderSceneFields(){
+  sceneFieldsEl.innerHTML = '';
+  editingScenes.forEach(function(s, idx){
+    var row = document.createElement('div');
+    row.className = 'sceneRow';
+
+    var labWrap = document.createElement('div'); labWrap.className = 'field';
+    var labLab = document.createElement('label'); labLab.textContent = 'SCENE NAME (shown on button)';
+    var labInp = document.createElement('input');
+    labInp.type = 'text'; labInp.value = s.label;
+    labInp.addEventListener('input', function(){ editingScenes[idx].label = labInp.value; });
+    labWrap.appendChild(labLab); labWrap.appendChild(labInp);
+
+    var shWrap = document.createElement('div'); shWrap.className = 'field';
+    var shLab = document.createElement('label'); shLab.textContent = 'SHORTCUT NAME (in Pushcut)';
+    var shInp = document.createElement('input');
+    shInp.type = 'text'; shInp.value = s.shortcut;
+    shInp.addEventListener('input', function(){ editingScenes[idx].shortcut = shInp.value; });
+    shWrap.appendChild(shLab); shWrap.appendChild(shInp);
+
+    var rmBtn = document.createElement('button');
+    rmBtn.className = 'rmBtn'; rmBtn.textContent = 'REMOVE';
+    rmBtn.addEventListener('click', function(){ editingScenes.splice(idx, 1); renderSceneFields(); });
+
+    row.appendChild(labWrap);
+    row.appendChild(shWrap);
+    row.appendChild(rmBtn);
+    sceneFieldsEl.appendChild(row);
+  });
+}
+
 function openSettings(){
   var cfg = loadConfig();
   apiKeyInput.value = cfg.key;
   renderNameFields(cfg);
+  editingScenes = cfg.scenes.map(function(s){ return Object.assign({}, s); });
+  renderSceneFields();
   settingsEl.style.display = 'flex';
 }
 function closeSettings(){ settingsEl.style.display = 'none'; }
@@ -246,13 +302,26 @@ function closeSettings(){ settingsEl.style.display = 'none'; }
 document.getElementById('gearBtn').addEventListener('click', openSettings);
 document.getElementById('closeBtn').addEventListener('click', closeSettings);
 
+document.getElementById('addSceneBtn').addEventListener('click', function(){
+  editingScenes.push({ label:'', shortcut:'' });
+  renderSceneFields();
+});
+
 document.getElementById('saveBtn').addEventListener('click', function(){
   var cfg = loadConfig();
   cfg.key = apiKeyInput.value.trim();
   nameFieldsEl.querySelectorAll('input[data-id]').forEach(function(inp){
     cfg.names[inp.dataset.id] = inp.value.trim();
   });
+  cfg.scenes = editingScenes
+    .map(function(s){ return { label: s.label.trim(), shortcut: s.shortcut.trim() }; })
+    .filter(function(s){ return s.label && s.shortcut; })
+    .map(function(s, i){
+      return Object.assign({ id: 'scene' + i + '-' + s.label.toLowerCase().replace(/[^a-z0-9]+/g, '') }, s);
+    });
   saveConfig(cfg);
+  renderMediaPanel();
+  renderScenePanel();
   setStatus('SETTINGS SAVED', 'ok');
   closeSettings();
 });
@@ -262,6 +331,10 @@ document.getElementById('restoreBtn').addEventListener('click', function(){
   cfg.key = apiKeyInput.value.trim();
   saveConfig(cfg);
   renderNameFields(cfg);
+  editingScenes = cfg.scenes.map(function(s){ return Object.assign({}, s); });
+  renderSceneFields();
+  renderMediaPanel();
+  renderScenePanel();
 });
 
 /* first run: no key saved yet -> open settings automatically */
