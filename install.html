@@ -25,15 +25,15 @@ p { font-size: 14px; color: rgba(255,255,255,0.45); margin-bottom: 32px; text-al
 <div id="qr"><img id="qr-img" width="260" height="260" alt="Install QR code" style="display:block;border-radius:12px;"></div>
 <div class="url" id="url-label"></div>
 <script>
-  var creationUrl = 'https://57gz69594c-ux.github.io/shaheer-lcars-home/?v=2';
+  var creationUrl = 'https://57gz69594c-ux.github.io/shaheer-lcars-home/?v=3';
   document.getElementById('url-label').textContent = creationUrl;
 
   var qrData = JSON.stringify({
     title: "Home Control",
     url: creationUrl,
-    description: "LCARS-style HomePod & Home control panel — media playback and scenes via Pushcut",
+    description: "Retro spaceship-panel HomePod & Home control — media playback and scenes via Pushcut",
     iconUrl: "",
-    themeColor: "#ff9c00"
+    themeColor: "#ff2d2d"
   });
 
   document.getElementById('qr-img').src =
